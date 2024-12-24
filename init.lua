@@ -25,7 +25,6 @@ require("lazy").setup({
     { "catppuccin/nvim", name = "catppuccin", priority = 1000 },
   -- lazy.nvim manages itself
   { "folke/lazy.nvim" },
-
   -- Treesitter
   {
     "nvim-treesitter/nvim-treesitter",
@@ -39,8 +38,17 @@ require("lazy").setup({
   { "tpope/vim-fugitive" },
 
   -- LSP
+  { "williamboman/nvim-lsp-installer"},
   { "neovim/nvim-lspconfig" },
- 
+  { "williamboman/mason.nvim" },
+  { "williamboman/mason-lspconfig.nvim"},
+  { "mfussenegger/nvim-dap"},
+  { "rcarriga/nvim-dap-ui", dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"} },
+  {
+      "ThePrimeagen/harpoon",
+      branch = "harpoon2",
+      dependencies = { "nvim-lua/plenary.nvim" }
+  },
   -- Telescope
   {
     "nvim-telescope/telescope.nvim",
@@ -53,7 +61,7 @@ require("lazy").setup({
         },
       }
       -- Telescope keybindings
-      vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope git_files<CR>", { noremap = true, silent = true })
+      vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
       vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
       vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
       vim.api.nvim_set_keymap("n", "<leader><leader>fh", "<Cmd>Telescope help_tags<CR>", { noremap = true, silent = true })
@@ -109,13 +117,81 @@ require("lazy").setup({
         --   If not available, we use `mini` as the fallback
         "rcarriga/nvim-notify",
         }
+    },
+    {
+      'stevearc/oil.nvim',
+      ---@module 'oil'
+      ---@type oil.SetupOpts
+      opts = {},
+      -- Optional dependencies
+      dependencies = { { "echasnovski/mini.icons", opts = {} } },
+      -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
     }
 })
 
 -- LSP Configurations
-require'lspconfig'.phpactor.setup{}
-require'lspconfig'.ts_ls.setup{}
 
+require'lspconfig'.ts_ls.setup({
+  on_attach = function(client, bufnr)
+    local opts = { noremap = true, silent = true, buffer = bufnr }
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  end,
+  capabilities = require('cmp_nvim_lsp').default_capabilities(),
+})
+require'lspconfig'.lua_ls.setup {
+  on_init = function(client)
+    if client.workspace_folders then
+      local path = client.workspace_folders[1].name
+      if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
+        return
+      end
+    end
+
+    client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+      runtime = {
+        -- Tell the language server which version of Lua you're using
+        -- (most likely LuaJIT in the case of Neovim)
+        version = 'LuaJIT'
+      },
+      -- Make the server aware of Neovim runtime files
+      workspace = {
+        checkThirdParty = false,
+        library = {
+          vim.env.VIMRUNTIME
+          -- Depending on the usage, you might want to add additional paths here.
+          -- "${3rd}/luv/library"
+          -- "${3rd}/busted/library",
+        }
+        -- or pull in all of 'runtimepath'. NOTE: this is a lot slower and will cause issues when working on your own configuration (see https://github.com/neovim/nvim-lspconfig/issues/3189)
+        -- library = vim.api.nvim_get_runtime_file("", true)
+      }
+    })
+  end,
+  settings = {
+    Lua = {}
+  }
+}
+
+local harpoon = require('harpoon')
+harpoon:setup({})
+
+-- basic telescope configuration
+local conf = require("telescope.config").values
+local function toggle_telescope(harpoon_files)
+    local file_paths = {}
+    for _, item in ipairs(harpoon_files.items) do
+        table.insert(file_paths, item.value)
+    end
+
+    require("telescope.pickers").new({}, {
+        prompt_title = "Harpoon",
+        finder = require("telescope.finders").new_table({
+            results = file_paths,
+        }),
+        previewer = conf.file_previewer({}),
+        sorter = conf.generic_sorter({}),
+    }):find()
+end
 
 require("noice").setup({
   lsp = {
@@ -129,11 +205,27 @@ require("noice").setup({
   -- you can enable a preset for easier configuration
   presets = {
     bottom_search = true, -- use a classic bottom cmdline for search
-    command_palette = true, -- position the cmdline and popupmenu together
+    command_palette = true, -- position the cmdline=  and popupmenu together
     long_message_to_split = true, -- long messages will be sent to a split
     inc_rename = false, -- enables an input dialog for inc-rename.nvim
     lsp_doc_border = false, -- add a border to hover docs and signature help
   },
+  messages = {
+    enabled = true,
+    view = "mini"
+  },
+  views = {
+    messages = {
+        position = {
+            row = 2, -- Adjust vertical placement
+            col = "50%", -- Center horizontally
+        },
+        size = {
+            width = 80,
+            height = 10,
+        },
+    },
+  }
 })
 
 
@@ -152,3 +244,23 @@ require("catppuccin").setup({
         },
     }
 })
+
+require("nvim-lsp-installer").setup({
+    automatic_installation = true, -- automatically detect which servers to install (based on which servers are set up via lspconfig)
+    ui = {
+        icons = {
+            server_installed = "✓",
+            server_pending = "➜",
+            server_uninstalled = "✗"
+        }
+    }
+})
+
+require("mason").setup()
+
+vim.keymap.set("n", "<leader><leader>fh", function() toggle_telescope(harpoon:list()) end,{ desc = "Open harpoon window" })
+vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end)
+vim.keymap.set("n", "<C-S-P>", function() harpoon:list():prev() end)
+vim.keymap.set("n", "<C-S-N>", function() harpoon:list():next() end)
+vim.api.nvim_set_keymap('n', '<leader><leader>o', ':Oil<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
