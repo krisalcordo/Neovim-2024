@@ -60,14 +60,6 @@ require("lazy").setup({
           file_ignore_patterns = { "node_modules", "%.png", "%.jpg", "%.jpeg", "%.gif", "%.bmp", "%.svg", "%.ico" },
         },
       }
-      -- Telescope keybindings
-      vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
-      vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
-      vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
-      vim.api.nvim_set_keymap("n", "<leader><leader>fh", "<Cmd>Telescope help_tags<CR>", { noremap = true, silent = true })
-      -- LSP keybindings
-      vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
-      vim.api.nvim_set_keymap('n', '<Leader>r', '<cmd>lua vim.lsp.buf.references()<CR>', { noremap = true, silent = true })
     end,
   },
     {
@@ -257,6 +249,14 @@ require("nvim-lsp-installer").setup({
 })
 
 require("mason").setup()
+require'lspconfig'.phpactor.setup({
+  on_attach = function(client, bufnr)
+    local opts = { noremap = true, silent = true, buffer = bufnr }
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', '<Leader>d', vim.lsp.buf.definition, opts)
+  end,
+  capabilities = require('cmp_nvim_lsp').default_capabilities(),
+})
 
 vim.keymap.set("n", "<leader><leader>fh", function() toggle_telescope(harpoon:list()) end,{ desc = "Open harpoon window" })
 vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end)
@@ -264,3 +264,9 @@ vim.keymap.set("n", "<C-S-P>", function() harpoon:list():prev() end)
 vim.keymap.set("n", "<C-S-N>", function() harpoon:list():next() end)
 vim.api.nvim_set_keymap('n', '<leader><leader>o', ':Oil<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader><leader>fh", "<Cmd>Telescope help_tags<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
