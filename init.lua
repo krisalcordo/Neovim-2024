@@ -267,6 +267,5 @@ vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<C
 vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader><leader>fh", "<Cmd>Telescope help_tags<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
