@@ -44,6 +44,19 @@ require("lazy").setup({
   { "williamboman/mason-lspconfig.nvim"},
   { "mfussenegger/nvim-dap"},
   { "rcarriga/nvim-dap-ui", dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"} },
+  {
+      "otavioschwanck/arrow.nvim",
+      dependencies = {
+        { "nvim-tree/nvim-web-devicons" },
+        -- or if using `mini.icons`
+        -- { "echasnovski/mini.icons" },
+      },
+      opts = {
+        show_icons = true,
+        leader_key = ';', -- Recommended to be a single key
+        buffer_leader_key = 'm', -- Per Buffer Mappings
+      }
+    },
   -- Telescope
   {
     "nvim-telescope/telescope.nvim",
