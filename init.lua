@@ -44,11 +44,6 @@ require("lazy").setup({
   { "williamboman/mason-lspconfig.nvim"},
   { "mfussenegger/nvim-dap"},
   { "rcarriga/nvim-dap-ui", dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"} },
-  {
-      "ThePrimeagen/harpoon",
-      branch = "harpoon2",
-      dependencies = { "nvim-lua/plenary.nvim" }
-  },
   -- Telescope
   {
     "nvim-telescope/telescope.nvim",
@@ -164,27 +159,6 @@ require'lspconfig'.lua_ls.setup {
   }
 }
 
-local harpoon = require('harpoon')
-harpoon:setup({})
-
--- basic telescope configuration
-local conf = require("telescope.config").values
-local function toggle_telescope(harpoon_files)
-    local file_paths = {}
-    for _, item in ipairs(harpoon_files.items) do
-        table.insert(file_paths, item.value)
-    end
-
-    require("telescope.pickers").new({}, {
-        prompt_title = "Harpoon",
-        finder = require("telescope.finders").new_table({
-            results = file_paths,
-        }),
-        previewer = conf.file_previewer({}),
-        sorter = conf.generic_sorter({}),
-    }):find()
-end
-
 require("noice").setup({
   lsp = {
     -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
@@ -258,10 +232,6 @@ require'lspconfig'.phpactor.setup({
   capabilities = require('cmp_nvim_lsp').default_capabilities(),
 })
 
-vim.keymap.set("n", "<leader><leader>fh", function() toggle_telescope(harpoon:list()) end,{ desc = "Open harpoon window" })
-vim.keymap.set("n", "<leader>a", function() harpoon:list():add() end)
-vim.keymap.set("n", "<C-S-P>", function() harpoon:list():prev() end)
-vim.keymap.set("n", "<C-S-N>", function() harpoon:list():next() end)
 vim.api.nvim_set_keymap('n', '<leader><leader>o', ':Oil<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
