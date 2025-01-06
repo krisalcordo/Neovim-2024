@@ -277,18 +277,18 @@ require'lspconfig'.phpactor.setup({
   capabilities = require('cmp_nvim_lsp').default_capabilities(),
 })
 
-vim.api.nvim_set_keymap('n', '<leader><leader>o', ':Oil<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader><leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>Telescope lsp_definitions<CR>', { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
 vim.keymap.set("n", "<leader>tbb", function()
   require("toggleterm.terminal").Terminal
     :new({
       direction = "float",
-      cmd = "cd /d C:\\code\\tb-extension\\TubeBuddy.Web && yarn dev:extension",
+      cmd = "cd /d C:\\code\\tb-extension\\TubeBuddy.Web && yarn dev:react",
     })
     :toggle()
 end, { noremap = true, silent = true })
