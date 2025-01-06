@@ -76,7 +76,16 @@ require("lazy").setup({
       config = function()
         require("telescope").setup {
           defaults = {
-            vimgrep_arguments = { "rg", "--hidden", "--glob", "!.git/*", "--files" },
+         vimgrep_arguments = {
+          "rg",
+          "--hidden",
+          "--no-ignore", -- Ensures all files are searched
+          "--glob", "!.git/*", -- Excludes .git directory
+          "--with-filename",
+          "--line-number",
+          "--column",
+          "--smart-case"
+        },
             find_command = { "fd", "--type", "f", "--hidden", "--exclude", ".git" },
             file_ignore_patterns = { 
               ".git", "node_modules", "dist", "build", "vendor", 
@@ -275,7 +284,7 @@ vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>
 vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
-vim.keymap.set("n", "<leader>yf", function()
+vim.keymap.set("n", "<leader>tbb", function()
   require("toggleterm.terminal").Terminal
     :new({
       direction = "float",
