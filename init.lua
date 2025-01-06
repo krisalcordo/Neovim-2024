@@ -284,11 +284,37 @@ vim.api.nvim_set_keymap("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { nor
 vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>Telescope lsp_definitions<CR>', { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
-vim.keymap.set("n", "<leader>tbb", function()
+vim.api.nvim_create_user_command("Br", function()
   require("toggleterm.terminal").Terminal
     :new({
       direction = "float",
+    float_opts = {
+        border = "single",
+        width = math.floor(vim.o.columns * 0.4),  -- 40% of screen width
+        height = math.floor(vim.o.lines * 0.3),   -- 30% of screen height
+        row = math.floor(vim.o.lines * 0.7),      -- Position near the bottom
+        col = math.floor(vim.o.columns * 0.6),    -- Position near the right
+      },
+      shade_terminals = true,
+      shading_factor = 2,
       cmd = "cd /d C:\\code\\tb-extension\\TubeBuddy.Web && yarn dev:react",
     })
     :toggle()
-end, { noremap = true, silent = true })
+end, {})
+vim.api.nvim_create_user_command("Be", function()
+  require("toggleterm.terminal").Terminal
+    :new({
+      direction = "float",
+    float_opts = {
+        border = "single",
+        width = math.floor(vim.o.columns * 0.4),  -- 40% of screen width
+        height = math.floor(vim.o.lines * 0.3),   -- 30% of screen height
+        row = math.floor(vim.o.lines * 0.7),      -- Position near the bottom
+        col = math.floor(vim.o.columns * 0.6),    -- Position near the right
+      },
+      shade_terminals = true,
+      shading_factor = 2,
+      cmd = "cd /d C:\\code\\tb-extension\\TubeBuddy.Web && yarn dev:extension",
+    })
+    :toggle()
+end, {})
