@@ -44,6 +44,17 @@ require("lazy").setup({
   { "williamboman/mason-lspconfig.nvim"},
   { "mfussenegger/nvim-dap"},
   { "rcarriga/nvim-dap-ui", dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"} },
+
+{
+  "akinsho/toggleterm.nvim",
+  version = "*",
+  config = function()
+    require("toggleterm").setup({
+      direction = "float",
+      shell = "powershell",  -- or "cmd.exe"
+    })
+  end
+},
   {
       "otavioschwanck/arrow.nvim",
       dependencies = {
@@ -58,25 +69,30 @@ require("lazy").setup({
       }
     },
   -- Telescope
-  {
-    "nvim-telescope/telescope.nvim",
-    tag = "0.1.8",
-    dependencies = { { "nvim-lua/plenary.nvim" } },
-    config = function()
-      require("telescope").setup {
-        defaults = {
-        vimgrep_arguments = { "rg", "--hidden", "--glob", "!.git/*", "--files" },
-        find_command = { "fd", "--type", "f", "--hidden", "--exclude", ".git" },
-        file_ignore_patterns = { 
-          ".git", "node_modules", "dist", "build", "vendor", 
-          "%.lock", "%.png", "%.jpg", "%.jpeg", "%.gif", "%.bmp", "%.svg", "%.ico" 
-        },
-        hidden = true,
-        no_ignore = true,
-      }
-      }
-    end,
-  },
+    {
+      "nvim-telescope/telescope.nvim",
+      tag = "0.1.8",
+      dependencies = { { "nvim-lua/plenary.nvim" } },
+      config = function()
+        require("telescope").setup {
+          defaults = {
+            vimgrep_arguments = { "rg", "--hidden", "--glob", "!.git/*", "--files" },
+            find_command = { "fd", "--type", "f", "--hidden", "--exclude", ".git" },
+            file_ignore_patterns = { 
+              ".git", "node_modules", "dist", "build", "vendor", 
+              "%.lock", "%.png", "%.jpg", "%.jpeg", "%.gif", "%.bmp", "%.svg", "%.ico" 
+            },
+            hidden = true,
+            no_ignore = true,
+          },
+          pickers = {
+            live_grep = {
+              additional_args = function() return { "--hidden", "--glob", "!.git/*" } end
+            }
+          }
+        }
+      end,
+    },
     {
       "hrsh7th/nvim-cmp",
       dependencies = {
@@ -259,3 +275,11 @@ vim.api.nvim_set_keymap("n", "<leader><leader>fg", "<Cmd>Telescope live_grep<CR>
 vim.api.nvim_set_keymap("n", "<leader><leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>lua vim.lsp.buf.definition()<CR>', { noremap = true, silent = true })
 vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
+vim.keymap.set("n", "<leader>yf", function()
+  require("toggleterm.terminal").Terminal
+    :new({
+      direction = "float",
+      cmd = "cd /d C:\\code\\tb-extension\\TubeBuddy.Web && yarn dev:extension",
+    })
+    :toggle()
+end, { noremap = true, silent = true })
