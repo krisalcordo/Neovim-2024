@@ -65,8 +65,15 @@ require("lazy").setup({
     config = function()
       require("telescope").setup {
         defaults = {
-          file_ignore_patterns = { "node_modules", "%.png", "%.jpg", "%.jpeg", "%.gif", "%.bmp", "%.svg", "%.ico" },
+        vimgrep_arguments = { "rg", "--hidden", "--glob", "!.git/*", "--files" },
+        find_command = { "fd", "--type", "f", "--hidden", "--exclude", ".git" },
+        file_ignore_patterns = { 
+          ".git", "node_modules", "dist", "build", "vendor", 
+          "%.lock", "%.png", "%.jpg", "%.jpeg", "%.gif", "%.bmp", "%.svg", "%.ico" 
         },
+        hidden = true,
+        no_ignore = true,
+      }
       }
     end,
   },
