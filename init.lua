@@ -44,7 +44,24 @@ require("lazy").setup({
   { "williamboman/mason-lspconfig.nvim"},
   { "mfussenegger/nvim-dap"},
   { "rcarriga/nvim-dap-ui", dependencies = {"mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"} },
-
+{
+  "folke/which-key.nvim",
+  event = "VeryLazy",
+  opts = {
+    -- your configuration comes here
+    -- or leave it empty to use the default settings
+    -- refer to the configuration section below
+  },
+  keys = {
+    {
+      "<leader>?",
+      function()
+        require("which-key").show({ global = false })
+      end,
+      desc = "Buffer Local Keymaps (which-key)",
+    },
+  },
+},
 {
   "akinsho/toggleterm.nvim",
   version = "*",
@@ -276,6 +293,7 @@ require'lspconfig'.phpactor.setup({
   end,
   capabilities = require('cmp_nvim_lsp').default_capabilities(),
 })
+
 
 vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
