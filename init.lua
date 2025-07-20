@@ -29,6 +29,18 @@ require("lazy").setup({
   {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = { "lua", "typescript", "javascript", "php", "vim", "vimdoc", "markdown", "markdown_inline", "html", "css", "json", "yaml", "bash" },
+        auto_install = true,
+        highlight = {
+          enable = true,
+        },
+        indent = {
+          enable = true,
+        },
+      })
+    end,
   },
 
   -- Easy Motion
@@ -177,49 +189,6 @@ require("lazy").setup({
     }
 })
 
--- LSP Configurations
-
-require'lspconfig'.ts_ls.setup({
-  on_attach = function(client, bufnr)
-    local opts = { noremap = true, silent = true, buffer = bufnr }
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-  end,
-  capabilities = require('cmp_nvim_lsp').default_capabilities(),
-})
-require'lspconfig'.lua_ls.setup {
-  on_init = function(client)
-    if client.workspace_folders then
-      local path = client.workspace_folders[1].name
-      if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
-        return
-      end
-    end
-
-    client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
-      runtime = {
-        -- Tell the language server which version of Lua you're using
-        -- (most likely LuaJIT in the case of Neovim)
-        version = 'LuaJIT'
-      },
-      -- Make the server aware of Neovim runtime files
-      workspace = {
-        checkThirdParty = false,
-        library = {
-          vim.env.VIMRUNTIME
-          -- Depending on the usage, you might want to add additional paths here.
-          -- "${3rd}/luv/library"
-          -- "${3rd}/busted/library",
-        }
-        -- or pull in all of 'runtimepath'. NOTE: this is a lot slower and will cause issues when working on your own configuration (see https://github.com/neovim/nvim-lspconfig/issues/3189)
-        -- library = vim.api.nvim_get_runtime_file("", true)
-      }
-    })
-  end,
-  settings = {
-    Lua = {}
-  }
-}
-
 require("noice").setup({
   lsp = {
     -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
@@ -273,23 +242,71 @@ require("catppuccin").setup({
 })
 
 require("mason").setup()
-require'lspconfig'.phpactor.setup({
-  on_attach = function(client, bufnr)
-    local opts = { noremap = true, silent = true, buffer = bufnr }
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-    vim.keymap.set('n', '<Leader>d', vim.lsp.buf.definition, opts)
-  end,
-  capabilities = require('cmp_nvim_lsp').default_capabilities(),
+require("mason-lspconfig").setup({
+  ensure_installed = { "ts_ls", "lua_ls", "phpactor" },
+  automatic_installation = true,
 })
 
+-- Shared on_attach function for all LSPs
+local on_attach = function(client, bufnr)
+  local opts = { noremap = true, silent = true, buffer = bufnr }
+  vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  vim.keymap.set('n', '<leader>d', vim.lsp.buf.definition, opts)
+  vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+  vim.keymap.set('n', '<leader>r', '<cmd>Telescope lsp_references<CR>', opts)
+  vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+  vim.keymap.set('n', 'gI', vim.lsp.buf.implementation, opts)
+  vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+  vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+  vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
+end
+
+-- Set up LSP handlers
+require("mason-lspconfig").setup_handlers({
+  -- Default handler for all servers
+  function(server_name)
+    require("lspconfig")[server_name].setup({
+      on_attach = on_attach,
+      capabilities = require('cmp_nvim_lsp').default_capabilities(),
+    })
+  end,
+  
+  -- Special handler for lua_ls
+  ["lua_ls"] = function()
+    require("lspconfig").lua_ls.setup({
+      on_attach = on_attach,
+      capabilities = require('cmp_nvim_lsp').default_capabilities(),
+      on_init = function(client)
+        if client.workspace_folders then
+          local path = client.workspace_folders[1].name
+          if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
+            return
+          end
+        end
+
+        client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+          runtime = {
+            version = 'LuaJIT'
+          },
+          workspace = {
+            checkThirdParty = false,
+            library = {
+              vim.env.VIMRUNTIME
+            }
+          }
+        })
+      end,
+      settings = {
+        Lua = {}
+      }
+    })
+  end,
+})
 
 vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<Leader>d', '<cmd>Telescope lsp_definitions<CR>', { noremap = true, silent = true })
-vim.keymap.set("n", "<leader>r", "<cmd>Telescope lsp_references<CR>",{ noremap = true, silent = true })
 vim.api.nvim_create_user_command("Br", function()
   require("toggleterm.terminal").Terminal
     :new({
