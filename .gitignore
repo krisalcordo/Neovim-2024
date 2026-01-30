@@ -2,6 +2,3 @@
 
 # macOS
 *.DS_Store
-
-# Bazecor backups (keep if you want all history)
-bazecor/**/*.json
