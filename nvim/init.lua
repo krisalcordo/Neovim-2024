@@ -248,7 +248,7 @@ require("catppuccin").setup({
 
 require("mason").setup()
 require("mason-lspconfig").setup({
-  ensure_installed = { "ts_ls", "lua_ls", "phpactor", "jdtls", "sourcekit" },
+  ensure_installed = { "ts_ls", "lua_ls", "phpactor", "jdtls" },
   automatic_installation = true,
 })
 
@@ -304,6 +304,17 @@ require("mason-lspconfig").setup_handlers({
       settings = {
         Lua = {}
       }
+    })
+  end,
+
+  -- Swift: sourcekit-lsp is provided by Xcode (not Mason)
+  ["sourcekit"] = function()
+    require("lspconfig").sourcekit.setup({
+      on_attach = on_attach,
+      capabilities = require('cmp_nvim_lsp').default_capabilities(),
+      cmd = { "xcrun", "sourcekit-lsp" },
+      filetypes = { "swift", "objective-c", "objective-cpp" },
+      root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
     })
   end,
 })
