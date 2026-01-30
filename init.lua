@@ -313,9 +313,12 @@ vim.api.nvim_set_keymap("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { no
 vim.api.nvim_set_keymap("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>m", "<Cmd>Telescope marks<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>sl", "<Cmd>SessionList<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>ss", "<Cmd>SessionSave<CR>", { noremap = true, silent = true })
 
 -- Auto-save per-project sessions + list/restore picker
 local sessions_dir = vim.fn.stdpath("state") .. "/sessions"
+local current_session_file = nil
 local function session_origin()
   if vim.fn.argc() > 0 then
     local arg = vim.fn.argv(0)
@@ -329,31 +332,51 @@ local function session_origin()
   return vim.fn.getcwd()
 end
 
-local function session_path()
+local function session_origin_key()
   local origin = session_origin()
-  local safe = origin:gsub("[/\\:]", "%%")
+  return origin:gsub("[/\\:]", "%%")
+end
+
+local function session_path()
+  local safe = session_origin_key()
   local ts = os.date("%Y%m%d-%H%M%S")
   return sessions_dir .. "/" .. safe .. "__" .. ts .. ".vim"
+end
+
+local function latest_session_for_origin()
+  local safe = session_origin_key()
+  local matches = vim.fn.glob(sessions_dir .. "/" .. safe .. "__*.vim", false, true)
+  if #matches == 0 then
+    return nil
+  end
+  table.sort(matches, function(a, b)
+    return vim.fn.getftime(a) < vim.fn.getftime(b)
+  end)
+  return matches[#matches]
 end
 
 vim.api.nvim_create_autocmd("VimLeavePre", {
   callback = function()
     vim.fn.mkdir(sessions_dir, "p")
-    local session_file = session_path()
+    local session_file = current_session_file or latest_session_for_origin() or session_path()
     vim.cmd("silent! mksession! " .. vim.fn.fnameescape(session_file))
   end,
 })
 
 vim.api.nvim_create_user_command("SessionSave", function()
   vim.fn.mkdir(sessions_dir, "p")
-  local session_file = session_path()
+  local session_file = current_session_file or latest_session_for_origin() or session_path()
   vim.cmd("silent! mksession! " .. vim.fn.fnameescape(session_file))
+  current_session_file = session_file
   vim.notify("Session saved: " .. session_file)
 end, {})
 
 vim.api.nvim_create_user_command("SessionList", function()
   vim.fn.mkdir(sessions_dir, "p")
   local files = vim.fn.glob(sessions_dir .. "/*.vim", false, true)
+  table.sort(files, function(a, b)
+    return vim.fn.getftime(a) < vim.fn.getftime(b)
+  end)
   if #files == 0 then
     vim.notify("No saved sessions found.", vim.log.levels.INFO)
     return
@@ -391,6 +414,7 @@ vim.api.nvim_create_user_command("SessionList", function()
         local entry = require("telescope.actions.state").get_selected_entry()
         require("telescope.actions").close(bufnr)
         if entry and entry.value then
+          current_session_file = entry.value
           vim.cmd("silent! source " .. vim.fn.fnameescape(entry.value))
         end
       end)
@@ -398,12 +422,26 @@ vim.api.nvim_create_user_command("SessionList", function()
         local entry = require("telescope.actions.state").get_selected_entry()
         require("telescope.actions").close(bufnr)
         if entry and entry.value then
+          current_session_file = entry.value
           vim.cmd("silent! source " .. vim.fn.fnameescape(entry.value))
         end
       end)
       return true
     end,
   }):find()
+end, {})
+
+vim.api.nvim_create_user_command("SessionClear", function()
+  local files = vim.fn.glob(sessions_dir .. "/*.vim", false, true)
+  if #files == 0 then
+    vim.notify("No saved sessions to clear.", vim.log.levels.INFO)
+    return
+  end
+  for _, path in ipairs(files) do
+    vim.fn.delete(path)
+  end
+  current_session_file = nil
+  vim.notify("All saved sessions cleared.")
 end, {})
 vim.api.nvim_create_user_command("Br", function()
   require("toggleterm.terminal").Terminal
