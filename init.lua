@@ -93,9 +93,14 @@ require("lazy").setup({
       opts = {
         show_icons = true,
         leader_key = ';', -- Recommended to be a single key
-        buffer_leader_key = 'm', -- Per Buffer Mappings
+        buffer_leader_key = "'", -- Per-buffer mappings; free up `m` for native marks
       }
     },
+  {
+    "chentoast/marks.nvim",
+    event = "VeryLazy",
+    opts = {},
+  },
   -- Telescope
     {
       "nvim-telescope/telescope.nvim",
@@ -307,6 +312,99 @@ vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent =
 vim.api.nvim_set_keymap("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fg", "<Cmd>Telescope live_grep<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>m", "<Cmd>Telescope marks<CR>", { noremap = true, silent = true })
+
+-- Auto-save per-project sessions + list/restore picker
+local sessions_dir = vim.fn.stdpath("state") .. "/sessions"
+local function session_origin()
+  if vim.fn.argc() > 0 then
+    local arg = vim.fn.argv(0)
+    if arg and arg ~= "" then
+      local stat = vim.loop.fs_stat(arg)
+      if stat and (stat.type == "file" or stat.type == "directory") then
+        return vim.fn.fnamemodify(arg, ":p")
+      end
+    end
+  end
+  return vim.fn.getcwd()
+end
+
+local function session_path()
+  local origin = session_origin()
+  local safe = origin:gsub("[/\\:]", "%%")
+  local ts = os.date("%Y%m%d-%H%M%S")
+  return sessions_dir .. "/" .. safe .. "__" .. ts .. ".vim"
+end
+
+vim.api.nvim_create_autocmd("VimLeavePre", {
+  callback = function()
+    vim.fn.mkdir(sessions_dir, "p")
+    local session_file = session_path()
+    vim.cmd("silent! mksession! " .. vim.fn.fnameescape(session_file))
+  end,
+})
+
+vim.api.nvim_create_user_command("SessionSave", function()
+  vim.fn.mkdir(sessions_dir, "p")
+  local session_file = session_path()
+  vim.cmd("silent! mksession! " .. vim.fn.fnameescape(session_file))
+  vim.notify("Session saved: " .. session_file)
+end, {})
+
+vim.api.nvim_create_user_command("SessionList", function()
+  vim.fn.mkdir(sessions_dir, "p")
+  local files = vim.fn.glob(sessions_dir .. "/*.vim", false, true)
+  if #files == 0 then
+    vim.notify("No saved sessions found.", vim.log.levels.INFO)
+    return
+  end
+  local ok, pickers = pcall(require, "telescope.pickers")
+  if not ok then
+    vim.notify("Telescope not available.", vim.log.levels.WARN)
+    return
+  end
+  local finders = require("telescope.finders")
+  local conf = require("telescope.config").values
+  pickers.new({}, {
+    prompt_title = "Load session",
+    finder = finders.new_table({
+      results = files,
+      entry_maker = function(path)
+        local base = vim.fn.fnamemodify(path, ":t:r")
+        local origin, ts = base:match("^(.*)__([0-9]+%-[0-9]+)$")
+        local name = (origin or base):gsub("%%", "/")
+        local ts_disp
+        if ts then
+          ts_disp = ts:gsub("(%d%d%d%d)(%d%d)(%d%d)%-(%d%d)(%d%d)(%d%d)", "%1-%2-%3 %4:%5:%6")
+        end
+        local display = ts_disp and (name .. "  [" .. ts_disp .. "]") or name
+        return {
+          value = path,
+          display = display,
+          ordinal = display,
+        }
+      end,
+    }),
+    sorter = conf.generic_sorter({}),
+    attach_mappings = function(_, map)
+      map("i", "<CR>", function(bufnr)
+        local entry = require("telescope.actions.state").get_selected_entry()
+        require("telescope.actions").close(bufnr)
+        if entry and entry.value then
+          vim.cmd("silent! source " .. vim.fn.fnameescape(entry.value))
+        end
+      end)
+      map("n", "<CR>", function(bufnr)
+        local entry = require("telescope.actions.state").get_selected_entry()
+        require("telescope.actions").close(bufnr)
+        if entry and entry.value then
+          vim.cmd("silent! source " .. vim.fn.fnameescape(entry.value))
+        end
+      end)
+      return true
+    end,
+  }):find()
+end, {})
 vim.api.nvim_create_user_command("Br", function()
   require("toggleterm.terminal").Terminal
     :new({
