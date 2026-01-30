@@ -1,2 +1,6 @@
 # Alacritty configuration
 # https://alacritty.org/config-alacritty.html
+
+[font]
+normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
+size = 15.0
