@@ -267,57 +267,107 @@ local on_attach = function(client, bufnr)
 end
 
 -- Set up LSP handlers
-require("mason-lspconfig").setup_handlers({
-  -- Default handler for all servers
-  function(server_name)
-    require("lspconfig")[server_name].setup({
-      on_attach = on_attach,
-      capabilities = require('cmp_nvim_lsp').default_capabilities(),
-    })
-  end,
-  
-  -- Special handler for lua_ls
-  ["lua_ls"] = function()
-    require("lspconfig").lua_ls.setup({
-      on_attach = on_attach,
-      capabilities = require('cmp_nvim_lsp').default_capabilities(),
-      on_init = function(client)
-        if client.workspace_folders then
-          local path = client.workspace_folders[1].name
-          if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
-            return
-          end
-        end
+local mason_lspconfig = require("mason-lspconfig")
+local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
-        client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
-          runtime = {
-            version = 'LuaJIT'
-          },
-          workspace = {
-            checkThirdParty = false,
-            library = {
-              vim.env.VIMRUNTIME
+local function apply_lsp_config(server_name, opts)
+  local config = vim.tbl_deep_extend("force", {
+    on_attach = on_attach,
+    capabilities = capabilities,
+  }, opts or {})
+
+  if vim.lsp.config then
+    vim.lsp.config(server_name, config)
+    vim.lsp.enable(server_name)
+  else
+    require("lspconfig")[server_name].setup(config)
+  end
+end
+
+if mason_lspconfig.setup_handlers then
+  mason_lspconfig.setup_handlers({
+    -- Default handler for all servers
+    function(server_name)
+      apply_lsp_config(server_name)
+    end,
+
+    -- Special handler for lua_ls
+    ["lua_ls"] = function()
+      apply_lsp_config("lua_ls", {
+        on_init = function(client)
+          if client.workspace_folders then
+            local path = client.workspace_folders[1].name
+            if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
+              return
+            end
+          end
+
+          client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+            runtime = {
+              version = 'LuaJIT'
+            },
+            workspace = {
+              checkThirdParty = false,
+              library = {
+                vim.env.VIMRUNTIME
+              }
             }
+          })
+        end,
+        settings = {
+          Lua = {}
+        }
+      })
+    end,
+
+    -- Swift: sourcekit-lsp is provided by Xcode (not Mason)
+    ["sourcekit"] = function()
+      apply_lsp_config("sourcekit", {
+        cmd = { "xcrun", "sourcekit-lsp" },
+        filetypes = { "swift", "objective-c", "objective-cpp" },
+        root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
+      })
+    end,
+  })
+else
+  -- mason-lspconfig v2 removed setup_handlers; configure servers directly
+  for _, server_name in ipairs({ "ts_ls", "phpactor", "jdtls" }) do
+    apply_lsp_config(server_name)
+  end
+
+  apply_lsp_config("lua_ls", {
+    on_init = function(client)
+      if client.workspace_folders then
+        local path = client.workspace_folders[1].name
+        if vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc') then
+          return
+        end
+      end
+
+      client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+        runtime = {
+          version = 'LuaJIT'
+        },
+        workspace = {
+          checkThirdParty = false,
+          library = {
+            vim.env.VIMRUNTIME
           }
-        })
-      end,
-      settings = {
-        Lua = {}
-      }
-    })
-  end,
+        }
+      })
+    end,
+    settings = {
+      Lua = {}
+    }
+  })
 
   -- Swift: sourcekit-lsp is provided by Xcode (not Mason)
-  ["sourcekit"] = function()
-    require("lspconfig").sourcekit.setup({
-      on_attach = on_attach,
-      capabilities = require('cmp_nvim_lsp').default_capabilities(),
-      cmd = { "xcrun", "sourcekit-lsp" },
-      filetypes = { "swift", "objective-c", "objective-cpp" },
-      root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
-    })
-  end,
-})
+  apply_lsp_config("sourcekit", {
+    cmd = { "xcrun", "sourcekit-lsp" },
+    filetypes = { "swift", "objective-c", "objective-cpp" },
+    root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
+  })
+end
 
 vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>ff", "<Cmd>Telescope find_files<CR>", { noremap = true, silent = true })
