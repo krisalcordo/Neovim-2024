@@ -376,6 +376,12 @@ vim.api.nvim_set_keymap("n", "<leader>fb", "<Cmd>Telescope buffers<CR>", { norem
 vim.api.nvim_set_keymap("n", "<leader>m", "<Cmd>Telescope marks<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>sl", "<Cmd>SessionList<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<leader>ss", "<Cmd>SessionSave<CR>", { noremap = true, silent = true })
+if vim.loop.os_uname().sysname == "Darwin" then
+  vim.keymap.set("n", "<D-h>", "<C-w>h", { noremap = true, silent = true })
+  vim.keymap.set("n", "<D-j>", "<C-w>j", { noremap = true, silent = true })
+  vim.keymap.set("n", "<D-k>", "<C-w>k", { noremap = true, silent = true })
+  vim.keymap.set("n", "<D-l>", "<C-w>l", { noremap = true, silent = true })
+end
 
 -- Auto-save per-project sessions + list/restore picker
 local sessions_dir = vim.fn.stdpath("state") .. "/sessions"

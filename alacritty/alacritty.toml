@@ -12,3 +12,9 @@ live_config_reload = true
 opacity = 0.9
 blur = true
 dynamic_title = true
+option_as_alt = "Both"
+
+[keyboard]
+bindings = [
+  { key = "N", mods = "Command", action = "None" },
+]
