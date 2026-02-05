@@ -252,10 +252,11 @@ require("mason-lspconfig").setup({
   automatic_installation = true,
 })
 
--- Shared on_attach function for all LSPs
-local on_attach = function(client, bufnr)
+-- Shared LSP keymaps
+local function lsp_keymaps(bufnr)
   local opts = { noremap = true, silent = true, buffer = bufnr }
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  vim.keymap.set('n', 'gd', '<cmd>Telescope lsp_definitions<CR>', opts)
   vim.keymap.set('n', '<leader>d', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   vim.keymap.set('n', '<leader>r', '<cmd>Telescope lsp_references<CR>', opts)
@@ -265,6 +266,18 @@ local on_attach = function(client, bufnr)
   vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
   vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
 end
+
+-- Shared on_attach function for all LSPs
+local on_attach = function(_, bufnr)
+  lsp_keymaps(bufnr)
+end
+
+-- Fallback: ensure keymaps are set when an LSP attaches
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    lsp_keymaps(args.buf)
+  end,
+})
 
 -- Set up LSP handlers
 local mason_lspconfig = require("mason-lspconfig")
@@ -276,12 +289,7 @@ local function apply_lsp_config(server_name, opts)
     capabilities = capabilities,
   }, opts or {})
 
-  if vim.lsp.config then
-    vim.lsp.config(server_name, config)
-    vim.lsp.enable(server_name)
-  else
-    require("lspconfig")[server_name].setup(config)
-  end
+  require("lspconfig")[server_name].setup(config)
 end
 
 if mason_lspconfig.setup_handlers then
@@ -322,6 +330,10 @@ if mason_lspconfig.setup_handlers then
 
     -- Swift: sourcekit-lsp is provided by Xcode (not Mason)
     ["sourcekit"] = function()
+      local ok, lspconfig = pcall(require, "lspconfig")
+      if not ok or not lspconfig.sourcekit then
+        return
+      end
       apply_lsp_config("sourcekit", {
         cmd = { "xcrun", "sourcekit-lsp" },
         filetypes = { "swift", "objective-c", "objective-cpp" },
@@ -362,11 +374,16 @@ else
   })
 
   -- Swift: sourcekit-lsp is provided by Xcode (not Mason)
-  apply_lsp_config("sourcekit", {
-    cmd = { "xcrun", "sourcekit-lsp" },
-    filetypes = { "swift", "objective-c", "objective-cpp" },
-    root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
-  })
+  do
+    local ok, lspconfig = pcall(require, "lspconfig")
+    if ok and lspconfig.sourcekit then
+      apply_lsp_config("sourcekit", {
+        cmd = { "xcrun", "sourcekit-lsp" },
+        filetypes = { "swift", "objective-c", "objective-cpp" },
+        root_dir = require("lspconfig.util").root_pattern("Package.swift", ".git"),
+      })
+    end
+  end
 end
 
 vim.api.nvim_set_keymap('n', '<leader>o', ':Oil<CR>', { noremap = true, silent = true })
